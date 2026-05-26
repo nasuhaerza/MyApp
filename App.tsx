@@ -44,15 +44,84 @@
 
 // export default App;
 
-import React from 'react';
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-
+import React, { useEffect, useState } from 'react';
+import {
+  Text,
+  View,
+ ScrollView,
+ StyleSheet,
+ TouchableOpacity,
+ TextInput,
+  Alert,
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
 
-/* HALAMAN 1 */
+/* HALAMAN LOGIN */
+function LoginScreen({ navigation }: any) {
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+
+    if (email === 'admin@gmail.com' && password === '123456') {
+      navigation.navigate('Home');
+    } else {
+      Alert.alert(
+        'Login Gagal',
+        'Email atau password salah'
+      );
+    }
+  };
+
+  return (
+
+    <View style={styles.loginContainer}>
+
+      <Text style={styles.loginTitle}>
+        Education Volunteer Scout
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Masukkan Email"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Masukkan Password"
+        secureTextEntry={true}
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+      >
+        <Text style={styles.buttonText}>
+          Login
+        </Text>
+      </TouchableOpacity>
+
+      <Text style={styles.loginInfo}>
+        Email: admin@gmail.com
+      </Text>
+
+      <Text style={styles.loginInfo}>
+        Password: 123456
+      </Text>
+
+    </View>
+  );
+}
+
+  /* HALAMAN 1 */
 
 function HomeScreen({ navigation }: any) {
   return (
@@ -96,23 +165,60 @@ function HomeScreen({ navigation }: any) {
 /* HALAMAN 2 */
 
 function ActivitiesScreen() {
+
+  const [volunteers, setVolunteers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // FETCH API
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/users')
+      .then(response => response.json())
+      .then(data => {
+        setVolunteers(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error(error);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <ScrollView style={styles.container}>
 
       <Text style={styles.title}>
-        Kegiatan Volunteer
+        Volunteer Activities
       </Text>
 
-      <Text style={styles.text}>📖 Mengajar membaca</Text>
-      <Text style={styles.text}>✏️ Menulis kreatif</Text>
-      <Text style={styles.text}>🔢 Matematika dasar</Text>
-      <Text style={styles.text}>💻 Pengenalan komputer</Text>
-      <Text style={styles.text}>🎨 Seni dan kreativitas</Text>
-      <Text style={styles.text}>🌍 Edukasi lingkungan</Text>
-      <Text style={styles.text}>🧪 Eksperimen sains</Text>
-      <Text style={styles.text}>🗣️ Bahasa Inggris dasar</Text>
-      <Text style={styles.text}>📚 Storytelling edukasi</Text>
-      <Text style={styles.text}>🏕️ Kegiatan pramuka edukatif</Text>
+      <Text style={styles.subtitle}>
+        Data Volunteer dari API
+      </Text>
+
+      {loading ? (
+        <Text style={styles.text}>Loading data...</Text>
+      ) : (
+        volunteers.map((item: any) => (
+          <View key={item.id} style={styles.card}>
+
+            <Text style={styles.name}>
+              {item.name}
+            </Text>
+
+            <Text style={styles.text}>
+              📧 {item.email}
+            </Text>
+
+            <Text style={styles.text}>
+              📞 {item.phone}
+            </Text>
+
+            <Text style={styles.text}>
+              🌍 {item.website}
+            </Text>
+
+          </View>
+        ))
+      )}
 
     </ScrollView>
   );
@@ -124,8 +230,13 @@ export default function App() {
   return (
     <NavigationContainer>
 
-      <Stack.Navigator>
+      <Stack.Navigator initialRouteName="Login">
 
+        <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+        />
+        
         <Stack.Screen
           name="Home"
           component={HomeScreen}
@@ -183,6 +294,50 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  card: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 15,
+    elevation: 4,
+  },
+
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#1B5E20',
+  },
+
+  loginContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  padding: 25,
+  backgroundColor: '#E8F5E9',
+  },
+
+  loginTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#1B5E20',
+  },
+
+  input: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+
+  loginInfo: {
+    textAlign: 'center',
+    marginTop: 10,
+    color: 'gray',
   },
 
 });
