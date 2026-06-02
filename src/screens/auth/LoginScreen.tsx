@@ -7,42 +7,48 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import { supabase } from '../../services/supabase/supabase';
 
 export default function LoginScreen({ navigation }: any) {
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-
     if (!email || !password) {
       Alert.alert('Error', 'Email dan password wajib diisi');
       return;
     }
 
-    const { error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
 
     if (error) {
       Alert.alert('Login Gagal', error.message);
       return;
     }
 
-    navigation.navigate('Main');
+    if (!data.session) {
+      Alert.alert('Login Gagal', 'Tidak dapat melakukan login. Coba lagi.');
+      return;
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main' }],
+    });
   };
 
   return (
     <View style={styles.container}>
-
-      <Text style={styles.title}>
-        Education Volunteer Scout
-      </Text>
+      <Text style={styles.title}>Education Volunteer Scout</Text>
 
       <TextInput
         placeholder="Email"
@@ -50,6 +56,7 @@ export default function LoginScreen({ navigation }: any) {
         onChangeText={setEmail}
         style={styles.input}
         autoCapitalize="none"
+        keyboardType="email-address"
       />
 
       <TextInput
@@ -63,20 +70,18 @@ export default function LoginScreen({ navigation }: any) {
       <TouchableOpacity
         style={styles.button}
         onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>
-          Login
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Register')}
-      >
-        <Text style={styles.link}>
-          Belum punya akun? Register
-        </Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.link}>Belum punya akun? Register</Text>
       </TouchableOpacity>
-
     </View>
   );
 }

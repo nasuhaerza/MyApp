@@ -1,38 +1,30 @@
-import React from 'react';
+﻿import React, { useContext } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import MapsScreen from '../screens/shared/MapsScreen';
-
-import VolunteerHomeScreen from '../screens/volunteer/VolunteerHomeScreen';
-import NotificationScreen from '../screens/shared/NotificationScreen';
-import ProfileScreen from '../screens/shared/ProfileScreen';
-
-const Tab = createBottomTabNavigator();
+import { AuthContext } from '../context/AuthContext';
+import SchoolTabNavigator from './SchoolTabNavigator';
+import VolunteerTabNavigator from './VolunteerTabNavigator';
 
 export default function MainTabNavigator() {
-  return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+  const { role, loading } = useContext(AuthContext);
 
-      <Tab.Screen
-        name="Home"
-        component={VolunteerHomeScreen}
-      />
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
 
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationScreen}
-      />
-
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-      />
-    
-      <Tab.Screen
-        name="Maps"
-        component={MapsScreen}
-      />
-
-    </Tab.Navigator>
+  return role === 'school' ? (
+    <SchoolTabNavigator />
+  ) : (
+    <VolunteerTabNavigator />
   );
 }
