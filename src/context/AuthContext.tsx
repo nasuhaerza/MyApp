@@ -1,53 +1,83 @@
-import React, { useContext } from 'react';
+﻿import React, {
+  createContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 
-import { NavigationContainer } from '@react-navigation/native';
+import type { Session, User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { supabase } from '../services/supabase/supabase';
 
-import LoginScreen from '../screens/auth/LoginScreen';
+type AuthContextValue = {
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
+};
 
-import RegisterScreen from '../screens/auth/RegisterScreen';
+export const AuthContext = createContext<AuthContextValue>({
+  session: null,
+  user: null,
+  loading: true,
+});
 
-import MainTabNavigator from './MainTabNavigator';
+type AuthProviderProps = {
+  children: ReactNode;
+};
 
-import { AuthContext } from '../context/AuthContext';
+export default function AuthProvider({ children }: AuthProviderProps) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-const Stack = createNativeStackNavigator();
+  const AUTH_SESSION_KEY = '@MyApp:authSession';
+  const AUTH_USER_KEY = '@MyApp:authUser';
 
-export default function AppNavigator() {
+  const persistAuthData = async (sessionValue: Session | null) => {
+    try {
+      await AsyncStorage.setItem(
+        AUTH_SESSION_KEY,
+        JSON.stringify(sessionValue)
+      );
+      await AsyncStorage.setItem(
+        AUTH_USER_KEY,
+        JSON.stringify(sessionValue?.user ?? null)
+      );
+    } catch (error) {
+      console.warn('Gagal menyimpan auth ke AsyncStorage', error);
+    }
+  };
 
-  const { session } = useContext(AuthContext);
+  useEffect(() => {
+    const initSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const currentSession = data?.session ?? null;
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      await persistAuthData(currentSession);
+      setLoading(false);
+    };
+
+    initSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      await persistAuthData(session);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <NavigationContainer>
-
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-
-        {session ? (
-          <Stack.Screen
-            name="Main"
-            component={MainTabNavigator}
-          />
-        ) : (
-          <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-            />
-
-            <Stack.Screen
-              name="Register"
-              component={RegisterScreen}
-            />
-          </>
-        )}
-
-      </Stack.Navigator>
-
-    </NavigationContainer>
+    <AuthContext.Provider value={{ session, user, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
